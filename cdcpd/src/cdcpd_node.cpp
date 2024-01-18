@@ -87,6 +87,7 @@ CDCPD_Node_Parameters::CDCPD_Node_Parameters(ros::NodeHandle& nh, ros::NodeHandl
       grid_size_initial_guess_cloth(
           ROSHelpers::GetParam<float>(ph, "grid_size_initial_guess_cloth", 0.0)),
       moveit_enabled(ROSHelpers::GetParam<bool>(ph, "moveit_enabled", false)),
+      moveit_frame(ROSHelpers::GetParam<std::string>(ph, "moveit_frame", "robot_root")),
       deformable_object_type(get_deformable_object_type(
           ROSHelpers::GetParam<std::string>(ph, "deformable_object_type", "rope")))
 {}
@@ -102,7 +103,7 @@ CDCPD_Moveit_Node::CDCPD_Moveit_Node(std::string const& robot_namespace)
       scene_monitor_(std::make_shared<planning_scene_monitor::PlanningSceneMonitor>(robot_description_)),
       model_loader_(std::make_shared<robot_model_loader::RobotModelLoader>(robot_description_)),
       model_(model_loader_->getModel()),
-      visual_tools_("robot_root", "cdcpd_moveit_node", scene_monitor_),
+      visual_tools_(node_params.moveit_frame, "cdcpd_moveit_node", scene_monitor_),
       tf_listener_(tf_buffer_)
 {
     auto const scene_topic = ros::names::append(robot_namespace,
@@ -123,7 +124,7 @@ CDCPD_Moveit_Node::CDCPD_Moveit_Node(std::string const& robot_namespace)
     grippers_info = YAML::LoadFile(node_params.grippers_info_filename);
     gripper_count = grippers_info.size();
     int gripper_idx = 0;
-    gripper_indices(1, gripper_count);
+    gripper_indices.resize(1, gripper_count);
     for (auto const gripper_info_i : grippers_info) {
         auto const tf_name = gripper_info_i.first.as<std::string>();
         auto const node_idx = gripper_info_i.second.as<int>();
@@ -334,7 +335,7 @@ std::pair<vm::Marker, vm::Marker> CDCPD_Moveit_Node::arrow_and_normal(int contac
     arrow.action = vm::Marker::ADD;
     arrow.type = vm::Marker::ARROW;
     arrow.ns = "arrow";
-    arrow.header.frame_id = moveit_frame;
+    arrow.header.frame_id = node_params.moveit_frame;
     arrow.header.stamp = ros::Time::now();
     arrow.color.r = 1.0;
     arrow.color.g = 0.0;
@@ -374,12 +375,12 @@ ObstacleConstraints CDCPD_Moveit_Node::get_moveit_obstacle_constriants(
     Eigen::Isometry3d cdcpd_to_moveit;
     try {
       auto const cdcpd_to_moveit_msg =
-          tf_buffer_.lookupTransform(moveit_frame, node_params.camera_frame, ros::Time(0),
+          tf_buffer_.lookupTransform(node_params.moveit_frame, node_params.camera_frame, ros::Time(0),
               ros::Duration(10));
       cdcpd_to_moveit = ehc::GeometryTransformToEigenIsometry3d(cdcpd_to_moveit_msg.transform);
     } catch (tf2::TransformException const& ex) {
       ROS_WARN_STREAM_THROTTLE(10.0, "Unable to lookup transform from " << node_params.camera_frame
-          << " to " << moveit_frame << ": " << ex.what());
+          << " to " << node_params.moveit_frame << ": " << ex.what());
       return {};
     }
 
@@ -437,7 +438,7 @@ ObstacleConstraints CDCPD_Moveit_Node::get_moveit_obstacle_constriants(
 
       robot_state.attachBody(collision_body_name, Eigen::Isometry3d::Identity(), {sphere},
                              {tracked_point_pose_moveit_frame}, std::vector<std::string>{},
-                             "base_link");
+                             node_params.moveit_frame);
     }
 
     // visualize
@@ -658,6 +659,6 @@ std::tuple<smmap::AllGrippersSinglePose,
 
 int main(int argc, char* argv[]) {
   ros::init(argc, argv, "cdcpd_node");
-  CDCPD_Moveit_Node cmn("hdt_michigan");
+  CDCPD_Moveit_Node cmn("");
   return EXIT_SUCCESS;
 }

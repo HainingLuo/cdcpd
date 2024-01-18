@@ -5,6 +5,7 @@
 
 #include <arc_utilities/eigen_ros_conversions.hpp>
 #include <iostream>
+#include <typeinfo>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef K::FT FT;
@@ -60,7 +61,7 @@ static GRBEnv &getGRBEnv() {
     static GRBEnv env;
     return env;
   } catch (const GRBException &e) {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Failed to create gurobi env. Is your license valid? test with gruobi.sh");
+    ROS_ERROR_STREAM_NAMED(LOGNAME, std::string("Failed to create gurobi env. Is your license valid? test with gruobi.sh. ")+e.getMessage());
     throw GRBException();
   }
 }

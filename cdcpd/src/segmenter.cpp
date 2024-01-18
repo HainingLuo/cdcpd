@@ -41,8 +41,11 @@ void SegmenterHSV::segment(const PointCloudRGB::Ptr & input_points)
     box_filter.setInputCloud(input_points);
     box_filter.filter(*points_cropped);
 
+
+    // std::cout << "number of points" << input_points->width << std::endl;
+
     // convert to HSV
-    pcl::PointCloudXYZRGBtoXYZHSV(*points_cropped, *points_hsv);
+    pcl::PointCloudXYZRGBtoXYZHSV(*input_points, *points_hsv);
 
     // HSV Filter
     auto const hue_negative = params_.hue_min > params_.hue_max;

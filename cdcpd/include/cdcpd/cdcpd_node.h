@@ -68,6 +68,7 @@ struct CDCPD_Node_Parameters
     float const width_initial_cloth;
     float const grid_size_initial_guess_cloth;
     bool const moveit_enabled;
+    std::string moveit_frame{"robot_root"};
     DeformableObjectType const deformable_object_type;
 };
 
@@ -130,7 +131,7 @@ public:
     robot_model_loader::RobotModelLoaderPtr model_loader_;
     robot_model::RobotModelPtr model_;
     moveit_visual_tools::MoveItVisualTools visual_tools_;
-    std::string moveit_frame{"robot_root"};
+    // std::string moveit_frame{"robot_root"};
     double min_distance_threshold{0.01};
     bool moveit_ready{false};
 
